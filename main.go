@@ -88,6 +88,24 @@ func UpdateTaskHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(task)
 }
 
+func DeleteTaskHandler(w http.ResponseWriter, r *http.Request) {
+	id := mux.Vars(r)["id"]
+
+	task := Task{}
+
+	if err := DB.First(&task, id).Error; err != nil {
+		http.Error(w, "Task not found: "+err.Error(), http.StatusNotFound)
+		return
+	}
+
+	if err := DB.Delete(&task, id).Error; err != nil {
+		http.Error(w, "Error deleting task: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
 func main() {
 	InitDB()
 	DB.AutoMigrate(&Task{})
@@ -97,6 +115,7 @@ func main() {
 	router.HandleFunc("/api/tasks", GetTasksHandler).Methods("GET")
 	router.HandleFunc("/api/tasks", CreateTaskHandler).Methods("POST")
 	router.HandleFunc("/api/tasks/{id}", UpdateTaskHandler).Methods("PATCH")
+	router.HandleFunc("/api/tasks/{id}", DeleteTaskHandler).Methods("DELETE")
 
 	http.ListenAndServe(":8080", router)
 }
